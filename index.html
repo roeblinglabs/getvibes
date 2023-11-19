@@ -14,7 +14,7 @@
 <p></p>
 <p>----</p>
 <p></p>
-<button onclick="getLocation()"><h1>Start Measuring Bridge Vibrations</h1></button>
+<button onclick="getData()"><h1>Start Measuring Bridge Vibrations</h1></button>
 <p></p>
 <p></p>
 <p id="demo"></p>
@@ -22,7 +22,7 @@
 <script>
 const x = document.getElementById("demo");
 
-function getLocation() {
+function getData() {
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(showPosition);
   } else { 
