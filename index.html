@@ -3,22 +3,37 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Accelerometer Data Logger</title>
+  <title>Bridge Vibration Measurement</title>
+  <style>
+    .start-button {
+      background-color: green;
+      color: white;
+      font-size: 1.5em;
+      margin-bottom: 10px;
+    }
+
+    .stop-button {
+      font-size: 1em;
+      margin-top: 10px;
+    }
+  </style>
 </head>
 <body>
 
-<button onclick="startLogging()">Start Logging</button>
-<button onclick="stopLogging()">Stop Logging</button>
+<button class="start-button" onclick="startLogging()">Start Measuring Bridge Vibrations</button>
+<button class="stop-button" onclick="stopLogging()">Stop Logging</button>
 
 <script>
 let accelerometerData = [];
+let geolocationData = {};
+let temperature;
 let loggingInterval;
 
 function startLogging() {
-  if (window.DeviceMotionEvent) {
-    loggingInterval = setInterval(logAccelerometerData, 1000); // Log data every second
+  if (window.DeviceMotionEvent && navigator.geolocation) {
+    loggingInterval = setInterval(logSensorData, 1000);
   } else {
-    alert("Accelerometer not supported on this device/browser.");
+    alert("Accelerometer or Geolocation not supported on this device/browser.");
   }
 }
 
@@ -27,32 +42,42 @@ function stopLogging() {
   downloadCSV();
 }
 
-function logAccelerometerData() {
+function logSensorData() {
   if (window.DeviceMotionEvent) {
     window.addEventListener('devicemotion', function(event) {
-      const acceleration = event.acceleration;
+      const acceleration = event.accelerationIncludingGravity;
       const timestamp = new Date().toISOString();
 
       accelerometerData.push({
         timestamp: timestamp,
-        x: acceleration.x,
-        y: acceleration.y,
         z: acceleration.z
       });
     });
   }
+
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function(position) {
+      geolocationData = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude
+      };
+    });
+  }
+
+  // Simulate fetching current temperature (replace with actual API call)
+  temperature = Math.floor(Math.random() * (30 - 10 + 1)) + 10;
 }
 
 function downloadCSV() {
   const csvContent = "data:text/csv;charset=utf-8," +
-    "Timestamp,X,Y,Z\n" +
-    accelerometerData.map(data => `${data.timestamp},${data.x},${data.y},${data.z}`).join("\n");
+    "Timestamp,Z,Latitude,Longitude,Temperature\n" +
+    accelerometerData.map(data => `${data.timestamp},${data.z},${geolocationData.latitude || ''},${geolocationData.longitude || ''},${temperature || ''}`).join("\n");
 
   const encodedUri = encodeURI(csvContent);
   const link = document.createElement("a");
   link.setAttribute("href", encodedUri);
-  link.setAttribute("download", "accelerometer_data.csv");
-  document.body.appendChild(link); // Required for Firefox
+  link.setAttribute("download", "bridge_measurement_data.csv");
+  document.body.appendChild(link);
   link.click();
 }
 
