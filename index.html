@@ -1,77 +1,62 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <title> Bridge Vibration Tool</title>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Accelerometer Data Logger</title>
 </head>
 <body>
-<main>
 
-<h2> Instructions</h2>
-<p>1. Place smartphone or tablet on bridge with screen facing up.</p>
-<p>2. Select a location with the largest vibrations, such as on the sidewalk at midspan.</p>
-<p>3. Wait for a truck to appear.</p>
-<p>4. Recording one minute of vibrations or a few seconds before and after a heavy vehicle passes the span is enough.</p>
-<p></p>
-<p>----</p>
-<p></p>
-<button onclick="getData()"><h1>Start Measuring Bridge Vibrations</h1></button>
-<p></p>
-<p></p>
-<p id="demo"></p>
-  
+<button onclick="startLogging()">Start Logging</button>
+<button onclick="stopLogging()">Stop Logging</button>
+
 <script>
-const x = document.getElementById("demo");
+let accelerometerData = [];
+let loggingInterval;
 
-  function handleMotion(event) {
-  updateFieldIfNotNull('Accelerometer_z', event.acceleration.z);
-
-  updateFieldIfNotNull('Accelerometer_i', event.interval, 2);
-
-  incrementEventCount();
-}
-
-let is_running = false;
-let demo_button = document.getElementById("start_demo");
-demo_button.onclick = function(e) {
-  e.preventDefault();
-  
-  // Request permission for iOS 13+ devices
-  if (
-    DeviceMotionEvent &&
-    typeof DeviceMotionEvent.requestPermission === "function"
-  ) {
-    DeviceMotionEvent.requestPermission();
-  }
-  
-  if (is_running){
-    window.removeEventListener("devicemotion", handleMotion);
-    demo_button.innerHTML = "Start demo";
-    demo_button.classList.add('btn-success');
-    demo_button.classList.remove('btn-danger');
-    is_running = false;
-  }else{
-    window.addEventListener("devicemotion", handleMotion);
-    document.getElementById("start_demo").innerHTML = "Stop demo";
-    demo_button.classList.remove('btn-success');
-    demo_button.classList.add('btn-danger');
-    is_running = true;
-  }
-};
-
-function getData() {
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(showPosition);
-  } else { 
-    x.innerHTML = "Geolocation is not supported by this browser.";
+function startLogging() {
+  if (window.DeviceMotionEvent) {
+    loggingInterval = setInterval(logAccelerometerData, 1000); // Log data every second
+  } else {
+    alert("Accelerometer not supported on this device/browser.");
   }
 }
-  
-function showPosition(position) {
-  x.innerHTML = "Latitude: " + position.coords.latitude + 
-  "<br>Longitude: " + position.coords.longitude + 
-  "<br>Geolocation Accuracy: " + position.coords.accuracy + " (meters)";
+
+function stopLogging() {
+  clearInterval(loggingInterval);
+  downloadCSV();
 }
+
+function logAccelerometerData() {
+  if (window.DeviceMotionEvent) {
+    window.addEventListener('devicemotion', function(event) {
+      const acceleration = event.acceleration;
+      const timestamp = new Date().toISOString();
+
+      accelerometerData.push({
+        timestamp: timestamp,
+        x: acceleration.x,
+        y: acceleration.y,
+        z: acceleration.z
+      });
+    });
+  }
+}
+
+function downloadCSV() {
+  const csvContent = "data:text/csv;charset=utf-8," +
+    "Timestamp,X,Y,Z\n" +
+    accelerometerData.map(data => `${data.timestamp},${data.x},${data.y},${data.z}`).join("\n");
+
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", "accelerometer_data.csv");
+  document.body.appendChild(link); // Required for Firefox
+  link.click();
+}
+
 </script>
-  
+
 </body>
 </html>
